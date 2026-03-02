@@ -9,7 +9,7 @@ on:
 jobs:
   build_neiber_os:
     # 🎯 AQUÍ ESTÁ EL ARREGLO: Pedimos la máquina exacta que Android 13 exige
-    runs-on: ubuntu-20.04 
+    runs-on: ubuntu-22.04.04 
 
     steps:
     - name: 🚀 Paso 1 - Preparar el Entorno y Descargar la herramienta 'repo'
