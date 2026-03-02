@@ -1,7 +1,11 @@
 name: Compilar Neiber OS (Edición Minimalista Definitiva)
 
+# EL TRUCO ESTÁ AQUÍ: Doble gatillo
 on:
-  workflow_dispatch: 
+  workflow_dispatch: # Activa el botón manual
+  push:
+    branches:
+      - main # Obliga a GitHub a reconocer el archivo apenas hagas el 'git push'
 
 jobs:
   build_neiber_os:
@@ -68,3 +72,4 @@ jobs:
       with:
         name: NeiberOS-Sistema-Limpio
         path: aosp/out/target/product/generic_arm64/system.img
+
