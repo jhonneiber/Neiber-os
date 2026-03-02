@@ -1,0 +1,70 @@
+name: Compilar Neiber OS (Edición Minimalista Definitiva)
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build_neiber_os:
+    # Si configuraste un servidor propio en GitHub con tus 100TB, cambia "ubuntu-latest" por "self-hosted"
+    runs-on: ubuntu-latest 
+
+    steps:
+    - name: 🚀 Paso 1 - Preparar el Entorno y Descargar la herramienta 'repo'
+      run: |
+        echo "Instalando dependencias pesadas de Linux..."
+        sudo apt-get update
+        sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 libncurses5 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3
+        
+        echo "Instalando herramienta de Google Repo..."
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        echo "PATH=~/bin:$PATH" >> $GITHUB_ENV
+
+    - name: 📥 Paso 2 - Sincronizar Código AOSP 13 (200GB+)
+      run: |
+        echo "Conectando con los servidores de Google..."
+        git config --global user.name "NeiberOS-Builder"
+        git config --global user.email "bot@neiberos.com"
+        
+        mkdir aosp
+        cd aosp
+        # Descargamos solo la rama exacta de Android 13 para ahorrar espacio (--depth=1)
+        repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1
+        repo sync -c -j8 --force-sync --no-clone-bundle --no-tags
+
+    - name: 🧬 Paso 3 - Inyectar ADN de Neiber OS y Limpiar Basura
+      run: |
+        echo "Aplicando las modificaciones núcleo..."
+        cd aosp
+        
+        # 1. Bautizo oficial del sistema
+        sed -i 's/PRODUCT_NAME := aosp_arm64/PRODUCT_NAME := neiberos_arm64/g' build/make/target/product/aosp_arm64.mk
+        sed -i 's/PRODUCT_MODEL := AOSP on ARM64/PRODUCT_MODEL := Neiber OS Minimalista/g' build/make/target/product/aosp_arm64.mk
+        sed -i 's/PRODUCT_BRAND := Android/PRODUCT_BRAND := Neiber/g' build/make/target/product/aosp_arm64.mk
+        echo "ro.build.display.id=Neiber OS - Edición Especial" >> build/make/core/sysprop.mk
+        
+        # 2. Asesinando las Opciones de Desarrollador y Depuración
+        sed -i 's/ro.debuggable=1/ro.debuggable=0/g' build/make/core/main.mk
+        sed -i 's/<bool name="config_show_development_settings">true<\/bool>/<bool name="config_show_development_settings">false<\/bool>/g' frameworks/base/core/res/res/values/config.xml
+        
+        # 3. Limpieza extrema: Borrando apps inútiles desde la raíz
+        rm -rf packages/apps/Browser
+        rm -rf packages/apps/Email
+        rm -rf packages/apps/HTMLViewer
+        rm -rf packages/apps/Gallery2
+
+    - name: ⚙️ Paso 4 - Compilar Neiber OS (GSI)
+      run: |
+        echo "Encendiendo los motores de compilación..."
+        cd aosp
+        source build/envsetup.sh
+        # Preparamos el entorno para una GSI ARM64 limpia sin root (user)
+        lunch aosp_arm64-user
+        make systemimage -j$(nproc)
+
+    - name: 📦 Paso 5 - Extraer el Sistema Neiber OS
+      uses: actions/upload-artifact@v4
+      with:
+        name: NeiberOS-Sistema-Limpio
+        path: aosp/out/target/product/generic_arm64/system.img
