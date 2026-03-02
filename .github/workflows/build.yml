@@ -1,16 +1,15 @@
 name: Compilar Neiber OS (Edición Minimalista Definitiva)
 
-# EL TRUCO ESTÁ AQUÍ: Doble gatillo
 on:
-  workflow_dispatch: # Activa el botón manual
+  workflow_dispatch: 
   push:
     branches:
-      - main # Obliga a GitHub a reconocer el archivo apenas hagas el 'git push'
+      - main 
 
 jobs:
   build_neiber_os:
-    # Si configuraste un servidor propio en GitHub con tus 100TB, cambia "ubuntu-latest" por "self-hosted"
-    runs-on: ubuntu-latest 
+    # 🎯 AQUÍ ESTÁ EL ARREGLO: Pedimos la máquina exacta que Android 13 exige
+    runs-on: ubuntu-20.04 
 
     steps:
     - name: 🚀 Paso 1 - Preparar el Entorno y Descargar la herramienta 'repo'
@@ -33,7 +32,6 @@ jobs:
         
         mkdir aosp
         cd aosp
-        # Descargamos solo la rama exacta de Android 13 para ahorrar espacio (--depth=1)
         repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1
         repo sync -c -j8 --force-sync --no-clone-bundle --no-tags
 
@@ -63,7 +61,6 @@ jobs:
         echo "Encendiendo los motores de compilación..."
         cd aosp
         source build/envsetup.sh
-        # Preparamos el entorno para una GSI ARM64 limpia sin root (user)
         lunch aosp_arm64-user
         make systemimage -j$(nproc)
 
@@ -72,4 +69,4 @@ jobs:
       with:
         name: NeiberOS-Sistema-Limpio
         path: aosp/out/target/product/generic_arm64/system.img
-
+        
